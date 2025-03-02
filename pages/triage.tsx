@@ -1,63 +1,74 @@
-import { useStreamingAvatar } from '@heygen/streaming-avatar';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
+const React = require('react');
+const { useState, useEffect } = React;
+const { useRouter } = require('next/router');
+const Head = require('next/head');
 
 // Default settings for the medical avatar
 const DEFAULT_SETTINGS = {
-  avatarId: "medical_f_1", // Default medical professional avatar
+  avatarId: "Dexter_Doctor_Standing2_public", // Default medical professional avatar
   voiceId: "en_us_001", // Clear, professional English voice
-  background: "medical_office",
-  knowledgeBaseId: "medical_triage", // Default medical knowledge base
+  background: "",
+  knowledgeBaseId: "", // Default medical knowledge base
 };
 
-export default function Triage() {
+function Triage() {
   const router = useRouter();
-  const [mode, setMode] = useState<'text' | 'video'>('video');
+  const [mode, setMode] = useState('video');
   const [loading, setLoading] = useState(true);
-  const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [avatarState, setAvatarState] = useState(null);
+  const [startSession, setStartSession] = useState(() => async () => {});
+  const [stopSession, setStopSession] = useState(() => () => {});
+  const [sendTextMessage, setSendTextMessage] = useState(() => async () => {});
 
   useEffect(() => {
-    // Get mode from URL parameter or localStorage
-    const urlMode = router.query.mode as 'text' | 'video';
-    const storedMode = localStorage.getItem('triageMode') as 'text' | 'video';
-    
+    const urlMode = router.query.mode;
+    const storedMode = localStorage.getItem('triageMode');
+
     if (urlMode) {
       setMode(urlMode);
     } else if (storedMode) {
       setMode(storedMode);
     }
-    
-    setLoading(false);
+
+    setTimeout(() => {
+      setLoading(false);
+      setMessages([
+        {
+          role: 'assistant',
+          content: 'Hello, I\'m your medical triage assistant. How can I help you today?'
+        }
+      ]);
+    }, 1500);
+
+    // Dynamically import the avatar module
+    import('@heygen/streaming-avatar').then(module => {
+      const { useStreamingAvatar } = module;
+      const { avatarState, startSession, stopSession, sendTextMessage } = useStreamingAvatar({
+        avatarId: "medical_f_1",
+        voiceId: "en_us_001",
+        background: "medical_office",
+        knowledgeBaseId: "medical_triage",
+        initialState: {
+          role: "medical_triage_specialist",
+          context: "initial_consultation",
+          voiceMode: mode === 'video'
+        }
+      });
+      setAvatarState(avatarState);
+      setStartSession(() => startSession);
+      setStopSession(() => stopSession);
+      setSendTextMessage(() => sendTextMessage);
+    }).catch(err => {
+      console.error('Failed to load avatar module:', err);
+    });
   }, [router.query]);
 
-  const {
-    avatarState,
-    startSession,
-    stopSession,
-    sendTextMessage,
-  } = useStreamingAvatar({
-    ...DEFAULT_SETTINGS,
-    initialState: {
-      role: "medical_triage_specialist",
-      context: "initial_consultation",
-      voiceMode: mode === 'video'
-    }
-  });
-
   useEffect(() => {
-    // Start session when component mounts
     const initSession = async () => {
       try {
         await startSession();
-        // Add welcome message
-        setMessages([
-          { 
-            role: 'assistant', 
-            content: 'Hello, I\'m your medical triage assistant. How can I help you today?' 
-          }
-        ]);
       } catch (error) {
         console.error('Failed to start session:', error);
       }
@@ -67,34 +78,20 @@ export default function Triage() {
       initSession();
     }
 
-    // Clean up when component unmounts
     return () => {
       stopSession();
     };
-  }, [loading]);
+  }, [loading, startSession, stopSession]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    // Add user message to chat
-    const userMessage = { role: 'user' as const, content: inputMessage };
+    const userMessage = { role: 'user', content: inputMessage };
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
 
     try {
-      // Send message to avatar
       await sendTextMessage(inputMessage);
-      
-      // Simulate response (in a real app, you'd get this from the avatar)
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev, 
-          { 
-            role: 'assistant', 
-            content: 'I understand your concern. Based on your symptoms, I recommend...' 
-          }
-        ]);
-      }, 1500);
     } catch (error) {
       console.error('Failed to send message:', error);
     }
@@ -113,7 +110,7 @@ export default function Triage() {
           <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center">
               <h1 className="text-xl font-semibold text-gray-900">Medical Triage</h1>
-              <button 
+              <button
                 onClick={() => router.push('/')}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -136,31 +133,32 @@ export default function Triage() {
             </div>
           ) : (
             <div className="flex w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-              {/* Avatar Video Section (only shown in video mode) */}
               {mode === 'video' && (
                 <div className="w-1/2 pr-4">
-                  <div className="bg-black rounded-lg aspect-video flex items-center justify-center">
-                    <div className="text-white text-center">
-                      <p className="text-lg">AI Medical Assistant</p>
-                      <p className="text-sm text-gray-400">Video stream would appear here</p>
+                  <div className="bg-gray-800 rounded-lg aspect-video flex items-center justify-center">
+                    <div className="text-white text-center p-4">
+                      <div className="w-24 h-24 bg-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <span className="text-3xl">👩‍⚕️</span>
+                      </div>
+                      <p className="text-lg font-medium">AI Medical Assistant</p>
+                      <p className="text-sm text-gray-400 mt-2">Video mode activated</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Chat Section */}
               <div className={mode === 'video' ? 'w-1/2 pl-4' : 'w-full'}>
                 <div className="bg-white rounded-lg shadow-sm h-full flex flex-col">
                   <div className="flex-grow overflow-y-auto p-4 space-y-4">
                     {messages.map((message, index) => (
-                      <div 
-                        key={index} 
+                      <div
+                        key={index}
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div 
+                        <div
                           className={`max-w-xs sm:max-w-md rounded-lg px-4 py-2 ${
-                            message.role === 'user' 
-                              ? 'bg-blue-600 text-white' 
+                            message.role === 'user'
+                              ? 'bg-blue-600 text-white'
                               : 'bg-gray-100 text-gray-800'
                           }`}
                         >
@@ -169,7 +167,7 @@ export default function Triage() {
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="border-t p-4">
                     <div className="flex">
                       <input
@@ -196,4 +194,6 @@ export default function Triage() {
       </div>
     </>
   );
-} 
+}
+
+module.exports = Triage; 

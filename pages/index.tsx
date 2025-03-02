@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import Head from 'next/head';
+const React = require('react');
+const { useState, useEffect } = React;
+const Link = require('next/link');
+const Head = require('next/head');
 
 // Default settings for the medical avatar
 const DEFAULT_SETTINGS = {
@@ -10,11 +11,11 @@ const DEFAULT_SETTINGS = {
   knowledgeBaseId: "medical_triage", // Default medical knowledge base
 };
 
-export default function Home() {
+function Home() {
   const [isStarting, setIsStarting] = useState(false);
-  const [mode, setMode] = useState<'text' | 'video'>('video');
+  const [mode, setMode] = useState('video');
 
-  const startTriageSession = async (selectedMode: 'text' | 'video') => {
+  const startTriageSession = async (selectedMode) => {
     setIsStarting(true);
     setMode(selectedMode);
     try {
@@ -168,3 +169,5 @@ export default function Home() {
     </>
   );
 }
+
+module.exports = Home;
