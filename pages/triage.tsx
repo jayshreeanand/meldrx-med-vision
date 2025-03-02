@@ -23,6 +23,7 @@ function Triage() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [avatar, setAvatar] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
 
   useEffect(() => {
     const urlMode = router.query.mode;
@@ -44,58 +45,89 @@ function Triage() {
       ]);
     }, 1500);
 
+    // Close any existing sessions
+    const closeExistingSession = async () => {
+      if (!sessionId) return;
+
+      try {
+        const response = await fetch('/api/closeSession', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          console.log(data.message);
+        } else {
+          console.error('Failed to close session:', data.error);
+        }
+      } catch (error) {
+        console.error('Error closing session:', error);
+      }
+    };
+
     // Fetch the session token
     const fetchSessionToken = async () => {
       try {
+        await closeExistingSession(); // Close existing sessions first
+
         const response = await fetch('/api/getSessionToken');
         const data = await response.json();
         if (data.token) {
-          // Initialize the StreamingAvatar instance
-          const avatarInstance = new StreamingAvatar({ token: data.token });
-          setAvatar(avatarInstance);
+          // Check if StreamingAvatar is a constructor
+          if (typeof StreamingAvatar === 'function') {
+            // Initialize the StreamingAvatar instance
+            const avatarInstance = new StreamingAvatar({ token: data.token });
+            setAvatar(avatarInstance);
 
-          // Start a new session
-          const startAvatarSession = async () => {
-            try {
-              const startRequest = {
-                quality: AvatarQuality.High,
-                avatarName: DEFAULT_SETTINGS.avatarId,
-                knowledgeId: DEFAULT_SETTINGS.knowledgeBaseId,
-                voice: {
-                  voiceId: DEFAULT_SETTINGS.voiceId,
-                  rate: 1.0,
-                  emotion: VoiceEmotion.FRIENDLY,
-                },
-                disableIdleTimeout: true
-              };
+            // Start a new session
+            const startAvatarSession = async () => {
+              try {
+                const startRequest = {
+                  quality: AvatarQuality.High,
+                  avatarName: DEFAULT_SETTINGS.avatarId,
+                  knowledgeId: DEFAULT_SETTINGS.knowledgeBaseId,
+                  voice: {
+                    voiceId: DEFAULT_SETTINGS.voiceId,
+                    rate: 1.0,
+                    emotion: VoiceEmotion.FRIENDLY,
+                  },
+                  disableIdleTimeout: true
+                };
 
-              const sessionResponse = await avatarInstance.newSession(startRequest);
-              console.log('Session started:', sessionResponse);
+                const sessionResponse = await avatarInstance.newSession(startRequest);
+                console.log('Session started:', sessionResponse);
+                setSessionId(sessionResponse.session_id); // Store the session ID
 
-              // Register event listeners
-              avatarInstance.on(StreamingEvents.STREAM_READY, (event) => {
-                console.log('Stream is ready:', event.detail);
-                // Attach the media stream to a video element
-                const videoElement = document.getElementById('avatar-video');
-                if (videoElement) {
-                  videoElement.srcObject = event.detail.stream;
-                }
-              });
+                // Register event listeners
+                avatarInstance.on(StreamingEvents.STREAM_READY, (event) => {
+                  console.log('Stream is ready:', event.detail);
+                  // Attach the media stream to a video element
+                  const videoElement = document.getElementById('avatar-video');
+                  if (videoElement) {
+                    videoElement.srcObject = event.detail.stream;
+                  }
+                });
 
-              avatarInstance.on(StreamingEvents.AVATAR_START_TALKING, () => {
-                console.log('Avatar has started talking');
-              });
+                avatarInstance.on(StreamingEvents.AVATAR_START_TALKING, () => {
+                  console.log('Avatar has started talking');
+                });
 
-              avatarInstance.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-                console.log('Avatar has stopped talking');
-              });
+                avatarInstance.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+                  console.log('Avatar has stopped talking');
+                });
 
-            } catch (error) {
-              console.error('Failed to start avatar session:', error);
-            }
-          };
+              } catch (error) {
+                console.error('Failed to start avatar session:', error);
+              }
+            };
 
-          startAvatarSession();
+            startAvatarSession();
+          } else {
+            console.error('StreamingAvatar is not a constructor');
+          }
         } else {
           console.error('Failed to obtain session token');
         }
