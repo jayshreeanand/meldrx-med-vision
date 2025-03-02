@@ -22,6 +22,7 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
+    console.log(data);
     return res.status(200).json({ token: data.data.token });
   } catch (error) {
     console.error("Error retrieving access token:", error);
