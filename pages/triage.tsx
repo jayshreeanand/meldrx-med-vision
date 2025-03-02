@@ -16,7 +16,9 @@ function Triage() {
   const [inputMessage, setInputMessage] = useState('');
   const [avatar, setAvatar] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const [accessToken, setAccessToken] = useState(null);
   const sessionInitialized = useRef(false);
+  const wsRef = useRef(null); // WebSocket reference
 
   useEffect(() => {
     const urlMode = router.query.mode;
@@ -45,9 +47,6 @@ function Triage() {
         setSessionId(storedSessionId);
       }
     }
-
-    // Log the heygenModule to inspect its exports
-    // console.log('HeyGen Module:', heygenModule);
 
     // Function to close any existing sessions
     const closeExistingSession = async () => {
@@ -110,10 +109,31 @@ function Triage() {
                   const sessionResponse = await avatarInstance.newSession(startRequest);
                   console.log('Session started:', sessionResponse);
                   setSessionId(sessionResponse.session_id); // Store the session ID
+                  setAccessToken(sessionResponse.access_token); // Store the access token
                   if (typeof window !== 'undefined') {
                     localStorage.setItem('sessionId', sessionResponse.session_id); // Save sessionId to localStorage
                   }
                   sessionInitialized.current = true; // Mark as initialized
+
+                  // Connect to the WebSocket
+                  wsRef.current = new WebSocket(sessionResponse.realtime_endpoint);
+
+                  wsRef.current.onopen = () => {
+                    console.log('WebSocket connection opened');
+                  };
+
+                  wsRef.current.onmessage = (event) => {
+                    console.log('WebSocket message received:', event.data);
+                    // Handle incoming messages
+                  };
+
+                  wsRef.current.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                  };
+
+                  wsRef.current.onclose = () => {
+                    console.log('WebSocket connection closed');
+                  };
 
                   // Register event listeners
                   avatarInstance.on(StreamingEvents.STREAM_READY, (event) => {
@@ -164,6 +184,9 @@ function Triage() {
     return () => {
       if (avatar) {
         avatar.stopAvatar();
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
       }
     };
   }, [router.query]); // Ensure dependencies are correct
