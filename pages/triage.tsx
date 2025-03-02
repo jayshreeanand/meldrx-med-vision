@@ -2,6 +2,7 @@ const React = require('react');
 const { useState, useEffect } = React;
 const { useRouter } = require('next/router');
 const Head = require('next/head');
+const { StreamingAvatar, StreamingEvents, TaskType, AvatarQuality, VoiceEmotion } = require('@heygen/streaming-avatar');
 
 // Default settings for the medical avatar
 const DEFAULT_SETTINGS = {
@@ -17,10 +18,7 @@ function Triage() {
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [avatarState, setAvatarState] = useState(null);
-  const [startSession, setStartSession] = useState(() => async () => {});
-  const [stopSession, setStopSession] = useState(() => () => {});
-  const [sendTextMessage, setSendTextMessage] = useState(() => async () => {});
+  const [avatar, setAvatar] = useState(null);
 
   useEffect(() => {
     const urlMode = router.query.mode;
@@ -42,46 +40,74 @@ function Triage() {
       ]);
     }, 1500);
 
-    // Dynamically import the avatar module
-    import('@heygen/streaming-avatar').then(module => {
-      const { useStreamingAvatar } = module;
-      const { avatarState, startSession, stopSession, sendTextMessage } = useStreamingAvatar({
-        avatarId: "medical_f_1",
-        voiceId: "en_us_001",
-        background: "medical_office",
-        knowledgeBaseId: "medical_triage",
-        initialState: {
-          role: "medical_triage_specialist",
-          context: "initial_consultation",
-          voiceMode: mode === 'video'
-        }
-      });
-      setAvatarState(avatarState);
-      setStartSession(() => startSession);
-      setStopSession(() => stopSession);
-      setSendTextMessage(() => sendTextMessage);
-    }).catch(err => {
-      console.error('Failed to load avatar module:', err);
-    });
-  }, [router.query]);
-
-  useEffect(() => {
-    const initSession = async () => {
+    // Fetch the session token
+    const fetchSessionToken = async () => {
       try {
-        await startSession();
+        const response = await fetch('/api/getSessionToken');
+        const data = await response.json();
+        if (data.token) {
+          // Initialize the StreamingAvatar instance
+          const avatarInstance = new StreamingAvatar({ token: data.token });
+          setAvatar(avatarInstance);
+
+          // Start a new session
+          const startAvatarSession = async () => {
+            try {
+              const startRequest = {
+                quality: AvatarQuality.High,
+                avatarName: "medical_f_1",
+                knowledgeId: "medical_triage",
+                voice: {
+                  voiceId: "en_us_001",
+                  rate: 1.0,
+                  emotion: VoiceEmotion.FRIENDLY,
+                },
+                disableIdleTimeout: true
+              };
+
+              const sessionResponse = await avatarInstance.newSession(startRequest);
+              console.log('Session started:', sessionResponse);
+
+              // Register event listeners
+              avatarInstance.on(StreamingEvents.STREAM_READY, (event) => {
+                console.log('Stream is ready:', event.detail);
+                // Attach the media stream to a video element
+                const videoElement = document.getElementById('avatar-video');
+                if (videoElement) {
+                  videoElement.srcObject = event.detail.stream;
+                }
+              });
+
+              avatarInstance.on(StreamingEvents.AVATAR_START_TALKING, () => {
+                console.log('Avatar has started talking');
+              });
+
+              avatarInstance.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+                console.log('Avatar has stopped talking');
+              });
+
+            } catch (error) {
+              console.error('Failed to start avatar session:', error);
+            }
+          };
+
+          startAvatarSession();
+        } else {
+          console.error('Failed to obtain session token');
+        }
       } catch (error) {
-        console.error('Failed to start session:', error);
+        console.error('Error fetching session token:', error);
       }
     };
 
-    if (!loading) {
-      initSession();
-    }
+    fetchSessionToken();
 
     return () => {
-      stopSession();
+      if (avatar) {
+        avatar.stopAvatar();
+      }
     };
-  }, [loading, startSession, stopSession]);
+  }, [router.query]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -91,7 +117,10 @@ function Triage() {
     setInputMessage('');
 
     try {
-      await sendTextMessage(inputMessage);
+      await avatar.speak({
+        text: inputMessage,
+        taskType: TaskType.TALK
+      });
     } catch (error) {
       console.error('Failed to send message:', error);
     }
@@ -136,13 +165,7 @@ function Triage() {
               {mode === 'video' && (
                 <div className="w-1/2 pr-4">
                   <div className="bg-gray-800 rounded-lg aspect-video flex items-center justify-center">
-                    <div className="text-white text-center p-4">
-                      <div className="w-24 h-24 bg-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                        <span className="text-3xl">👩‍⚕️</span>
-                      </div>
-                      <p className="text-lg font-medium">AI Medical Assistant</p>
-                      <p className="text-sm text-gray-400 mt-2">Video mode activated</p>
-                    </div>
+                    <video id="avatar-video" autoPlay muted className="w-full h-full rounded-lg"></video>
                   </div>
                 </div>
               )}
