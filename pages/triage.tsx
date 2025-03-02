@@ -27,7 +27,7 @@ function Triage() {
 
   useEffect(() => {
     const urlMode = router.query.mode;
-    const storedMode = localStorage.getItem('triageMode');
+    const storedMode = typeof window !== 'undefined' ? localStorage.getItem('triageMode') : null;
 
     if (urlMode) {
       setMode(urlMode);
@@ -45,6 +45,14 @@ function Triage() {
       ]);
     }, 1500);
 
+    // Retrieve sessionId from localStorage on the client side
+    if (typeof window !== 'undefined') {
+      const storedSessionId = localStorage.getItem('sessionId');
+      if (storedSessionId) {
+        setSessionId(storedSessionId);
+      }
+    }
+
     // Close any existing sessions
     const closeExistingSession = async () => {
       if (!sessionId) return;
@@ -60,6 +68,9 @@ function Triage() {
         const data = await response.json();
         if (response.ok) {
           console.log(data.message);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('sessionId'); // Clear sessionId from localStorage
+          }
         } else {
           console.error('Failed to close session:', data.error);
         }
@@ -69,7 +80,7 @@ function Triage() {
     };
 
     // Fetch the session token
-    const fetchSessionToken = async () => {
+    const fetchSessionToken = async (retryCount = 0) => {
       try {
         await closeExistingSession(); // Close existing sessions first
 
@@ -100,6 +111,9 @@ function Triage() {
                 const sessionResponse = await avatarInstance.newSession(startRequest);
                 console.log('Session started:', sessionResponse);
                 setSessionId(sessionResponse.session_id); // Store the session ID
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('sessionId', sessionResponse.session_id); // Save sessionId to localStorage
+                }
 
                 // Register event listeners
                 avatarInstance.on(StreamingEvents.STREAM_READY, (event) => {
@@ -120,7 +134,12 @@ function Triage() {
                 });
 
               } catch (error) {
-                console.error('Failed to start avatar session:', error);
+                if (error.code === 10007 && retryCount < 3) {
+                  console.warn('Concurrent limit reached, retrying...');
+                  setTimeout(() => fetchSessionToken(retryCount + 1), 5000); // Retry after 5 seconds
+                } else {
+                  console.error('Failed to start avatar session:', error);
+                }
               }
             };
 
