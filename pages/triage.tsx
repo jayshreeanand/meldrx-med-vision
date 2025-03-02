@@ -21,13 +21,16 @@ function Triage() {
   const wsRef = useRef(null); // WebSocket reference
 
   useEffect(() => {
+    console.log('Component mounted');
     const urlMode = router.query.mode;
     const storedMode = typeof window !== 'undefined' ? localStorage.getItem('triageMode') : null;
 
     if (urlMode) {
       setMode(urlMode);
+      console.log('Mode set from URL:', urlMode);
     } else if (storedMode) {
       setMode(storedMode);
+      console.log('Mode set from localStorage:', storedMode);
     }
 
     setTimeout(() => {
@@ -38,6 +41,7 @@ function Triage() {
           content: 'Hello, I\'m your medical triage assistant. How can I help you today?'
         }
       ]);
+      console.log('Initial message set');
     }, 1500);
 
     // Retrieve sessionId from localStorage on the client side
@@ -48,140 +52,101 @@ function Triage() {
       }
     }
 
-    // Function to close any existing sessions
-    const closeExistingSession = async () => {
-      if (!sessionId) return;
-
+    // Function to list and close existing sessions
+    const manageSessions = async () => {
       try {
-        const response = await fetch('/api/closeSession', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ session_id: sessionId })
-        });
+        console.log('Listing active sessions');
+        const listResponse = await fetch('/api/listSessions');
+        const listData = await listResponse.json();
+        console.log('Active sessions:', listData.sessions);
+
+        if (listData.sessions && listData.sessions.length > 0) {
+          console.log('Closing active sessions');
+          for (const session of listData.sessions) {
+            await fetch('/api/closeSession', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ session_id: session.session_id })
+            });
+            console.log('Closed session:', session.session_id);
+          }
+        }
+
+        // Start a new session
+        startNewSession();
+      } catch (error) {
+        console.error('Error managing sessions:', error);
+      }
+    };
+
+    // Function to start a new session
+    const startNewSession = async () => {
+      try {
+        console.log('Starting a new session');
+        const response = await fetch('/api/startSession');
         const data = await response.json();
-        if (response.ok) {
-          console.log(data.message);
+        console.log('New session data:', data);
+
+        if (data.session_id && data.access_token) {
+          setSessionId(data.session_id);
+          setAccessToken(data.access_token);
           if (typeof window !== 'undefined') {
-            localStorage.removeItem('sessionId'); // Clear sessionId from localStorage
+            localStorage.setItem('sessionId', data.session_id);
           }
-        } else {
-          console.error('Failed to close session:', data.error);
-        }
-      } catch (error) {
-        console.error('Error closing session:', error);
-      }
-    };
 
-    // Fetch the session token
-    const fetchSessionToken = async (retryCount = 0) => {
-      if (sessionInitialized.current) return; // Prevent re-initialization
+          // Connect to the WebSocket
+          wsRef.current = new WebSocket(data.realtime_endpoint);
 
-      try {
-        if (!sessionId) {
-          await closeExistingSession(); // Close existing sessions first
+          wsRef.current.onopen = () => {
+            console.log('WebSocket connection opened');
+          };
 
-          const response = await fetch('/api/getSessionToken');
-          const data = await response.json();
-          if (data.token) {
-            // Check if StreamingAvatar is a constructor
-            if (typeof StreamingAvatar === 'function') {
-              // Initialize the StreamingAvatar instance
-              const avatarInstance = new StreamingAvatar({ token: data.token });
-              setAvatar(avatarInstance);
+          wsRef.current.onmessage = (event) => {
+            console.log('WebSocket message received:', event.data);
+            // Handle incoming messages
+          };
 
-              // Start a new session
-              const startAvatarSession = async () => {
-                try {
-                  const startRequest = {
-                    quality: AvatarQuality.High,
-                    avatarName: "",
-                    knowledgeId: "",
-                    voice: {
-                      voiceId: "",
-                      rate: 1.0,
-                      emotion: VoiceEmotion.FRIENDLY,
-                    },
-                    disableIdleTimeout: true
-                  };
+          wsRef.current.onerror = (error) => {
+            console.error('WebSocket error:', error);
+          };
 
-                  const sessionResponse = await avatarInstance.newSession(startRequest);
-                  console.log('Session started:', sessionResponse);
-                  setSessionId(sessionResponse.session_id); // Store the session ID
-                  setAccessToken(sessionResponse.access_token); // Store the access token
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem('sessionId', sessionResponse.session_id); // Save sessionId to localStorage
-                  }
-                  sessionInitialized.current = true; // Mark as initialized
+          wsRef.current.onclose = () => {
+            console.log('WebSocket connection closed');
+          };
 
-                  // Connect to the WebSocket
-                  wsRef.current = new WebSocket(sessionResponse.realtime_endpoint);
-
-                  wsRef.current.onopen = () => {
-                    console.log('WebSocket connection opened');
-                  };
-
-                  wsRef.current.onmessage = (event) => {
-                    console.log('WebSocket message received:', event.data);
-                    // Handle incoming messages
-                  };
-
-                  wsRef.current.onerror = (error) => {
-                    console.error('WebSocket error:', error);
-                  };
-
-                  wsRef.current.onclose = () => {
-                    console.log('WebSocket connection closed');
-                  };
-
-                  // Register event listeners
-                  avatarInstance.on(StreamingEvents.STREAM_READY, (event) => {
-                    console.log('Stream is ready:', event.detail);
-                    // Attach the media stream to a video element
-                    const videoElement = document.getElementById('avatar-video');
-                    if (videoElement) {
-                      videoElement.srcObject = event.detail.stream;
-                    }
-                  });
-
-                  avatarInstance.on(StreamingEvents.AVATAR_START_TALKING, () => {
-                    console.log('Avatar has started talking');
-                  });
-
-                  avatarInstance.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-                    console.log('Avatar has stopped talking');
-                  });
-
-                } catch (error) {
-                  if (error.code === 10007 && retryCount < 3) {
-                    console.warn('Concurrent limit reached, retrying...');
-                    setTimeout(() => fetchSessionToken(retryCount + 1), 5000); // Retry after 5 seconds
-                  } else {
-                    console.error('Failed to start avatar session:', error);
-                    if (typeof window !== 'undefined') {
-                      localStorage.removeItem('sessionId'); // Clear sessionId on error
-                    }
-                  }
-                }
-              };
-
-              startAvatarSession();
-            } else {
-              console.error('StreamingAvatar is not a constructor');
+          // Register event listeners
+          avatar.on(StreamingEvents.STREAM_READY, (event) => {
+            console.log('Stream is ready:', event.detail);
+            // Attach the media stream to a video element
+            const videoElement = document.getElementById('avatar-video');
+            if (videoElement) {
+              videoElement.srcObject = event.detail.stream;
             }
-          } else {
-            console.error('Failed to obtain session token');
-          }
+          });
+
+          avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+            console.log('Avatar has started talking');
+          });
+
+          avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+            console.log('Avatar has stopped talking');
+          });
+
+        } else {
+          console.error('Failed to start a new session');
         }
       } catch (error) {
-        console.error('Error fetching session token:', error);
+        console.error('Error starting new session:', error);
       }
     };
 
-    fetchSessionToken();
+    // Manage sessions on component mount
+    manageSessions();
 
     return () => {
+      console.log('Component unmounted');
       if (avatar) {
         avatar.stopAvatar();
       }
@@ -189,7 +154,7 @@ function Triage() {
         wsRef.current.close();
       }
     };
-  }, [router.query]); // Ensure dependencies are correct
+  }, [router.query]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -197,6 +162,7 @@ function Triage() {
     const userMessage = { role: 'user', content: inputMessage };
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
+    console.log('User message sent:', inputMessage);
 
     try {
       await avatar.speak({
