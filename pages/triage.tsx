@@ -2,8 +2,12 @@ const React = require('react');
 const { useState, useEffect } = React;
 const { useRouter } = require('next/router');
 const Head = require('next/head');
-const { StreamingAvatar, StreamingEvents, TaskType, AvatarQuality, VoiceEmotion } = require('@heygen/streaming-avatar');
-
+// const { StreamingAvatar, StreamingEvents, TaskType, AvatarQuality, VoiceEmotion } = require('@heygen/streaming-avatar');
+import StreamingAvatar, {
+  AvatarQuality,
+  VoiceEmotion,
+  StreamingEvents, TaskMode, TaskType,
+} from "@heygen/streaming-avatar";
 // Default settings for the medical avatar
 const DEFAULT_SETTINGS = {
   avatarId: "Dexter_Doctor_Standing2_public", // Default medical professional avatar
