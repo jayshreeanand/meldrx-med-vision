@@ -1,20 +1,12 @@
 const React = require('react');
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 const { useRouter } = require('next/router');
 const Head = require('next/head');
-// const { StreamingAvatar, StreamingEvents, TaskType, AvatarQuality, VoiceEmotion } = require('@heygen/streaming-avatar');
 import StreamingAvatar, {
   AvatarQuality,
-  VoiceEmotion,
-  StreamingEvents, TaskMode, TaskType,
+  StreamingEvents, TaskMode, TaskType, VoiceEmotion,
 } from "@heygen/streaming-avatar";
-// Default settings for the medical avatar
-const DEFAULT_SETTINGS = {
-  avatarId: "", // Default medical professional avatar
-  voiceId: "", // Clear, professional English voice
-  background: "",
-  knowledgeBaseId: "", // Default medical knowledge base
-};
+// const heygenModule = require('@heygen/streaming-avatar');
 
 function Triage() {
   const router = useRouter();
@@ -24,6 +16,7 @@ function Triage() {
   const [inputMessage, setInputMessage] = useState('');
   const [avatar, setAvatar] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const sessionInitialized = useRef(false);
 
   useEffect(() => {
     const urlMode = router.query.mode;
@@ -53,7 +46,10 @@ function Triage() {
       }
     }
 
-    // Close any existing sessions
+    // Log the heygenModule to inspect its exports
+    // console.log('HeyGen Module:', heygenModule);
+
+    // Function to close any existing sessions
     const closeExistingSession = async () => {
       if (!sessionId) return;
 
@@ -81,74 +77,82 @@ function Triage() {
 
     // Fetch the session token
     const fetchSessionToken = async (retryCount = 0) => {
+      if (sessionInitialized.current) return; // Prevent re-initialization
+
       try {
-        await closeExistingSession(); // Close existing sessions first
+        if (!sessionId) {
+          await closeExistingSession(); // Close existing sessions first
 
-        const response = await fetch('/api/getSessionToken');
-        const data = await response.json();
-        if (data.token) {
-          // Check if StreamingAvatar is a constructor
-          if (typeof StreamingAvatar === 'function') {
-            // Initialize the StreamingAvatar instance
-            const avatarInstance = new StreamingAvatar({ token: data.token });
-            setAvatar(avatarInstance);
+          const response = await fetch('/api/getSessionToken');
+          const data = await response.json();
+          if (data.token) {
+            // Check if StreamingAvatar is a constructor
+            if (typeof StreamingAvatar === 'function') {
+              // Initialize the StreamingAvatar instance
+              const avatarInstance = new StreamingAvatar({ token: data.token });
+              setAvatar(avatarInstance);
 
-            // Start a new session
-            const startAvatarSession = async () => {
-              try {
-                const startRequest = {
-                  quality: AvatarQuality.High,
-                  avatarName: DEFAULT_SETTINGS.avatarId,
-                  knowledgeId: DEFAULT_SETTINGS.knowledgeBaseId,
-                  voice: {
-                    voiceId: DEFAULT_SETTINGS.voiceId,
-                    rate: 1.0,
-                    emotion: VoiceEmotion.FRIENDLY,
-                  },
-                  disableIdleTimeout: true
-                };
+              // Start a new session
+              const startAvatarSession = async () => {
+                try {
+                  const startRequest = {
+                    quality: AvatarQuality.High,
+                    avatarName: "",
+                    knowledgeId: "",
+                    voice: {
+                      voiceId: "",
+                      rate: 1.0,
+                      emotion: VoiceEmotion.FRIENDLY,
+                    },
+                    disableIdleTimeout: true
+                  };
 
-                const sessionResponse = await avatarInstance.newSession(startRequest);
-                console.log('Session started:', sessionResponse);
-                setSessionId(sessionResponse.session_id); // Store the session ID
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem('sessionId', sessionResponse.session_id); // Save sessionId to localStorage
-                }
-
-                // Register event listeners
-                avatarInstance.on(StreamingEvents.STREAM_READY, (event) => {
-                  console.log('Stream is ready:', event.detail);
-                  // Attach the media stream to a video element
-                  const videoElement = document.getElementById('avatar-video');
-                  if (videoElement) {
-                    videoElement.srcObject = event.detail.stream;
+                  const sessionResponse = await avatarInstance.newSession(startRequest);
+                  console.log('Session started:', sessionResponse);
+                  setSessionId(sessionResponse.session_id); // Store the session ID
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('sessionId', sessionResponse.session_id); // Save sessionId to localStorage
                   }
-                });
+                  sessionInitialized.current = true; // Mark as initialized
 
-                avatarInstance.on(StreamingEvents.AVATAR_START_TALKING, () => {
-                  console.log('Avatar has started talking');
-                });
+                  // Register event listeners
+                  avatarInstance.on(StreamingEvents.STREAM_READY, (event) => {
+                    console.log('Stream is ready:', event.detail);
+                    // Attach the media stream to a video element
+                    const videoElement = document.getElementById('avatar-video');
+                    if (videoElement) {
+                      videoElement.srcObject = event.detail.stream;
+                    }
+                  });
 
-                avatarInstance.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-                  console.log('Avatar has stopped talking');
-                });
+                  avatarInstance.on(StreamingEvents.AVATAR_START_TALKING, () => {
+                    console.log('Avatar has started talking');
+                  });
 
-              } catch (error) {
-                if (error.code === 10007 && retryCount < 3) {
-                  console.warn('Concurrent limit reached, retrying...');
-                  setTimeout(() => fetchSessionToken(retryCount + 1), 5000); // Retry after 5 seconds
-                } else {
-                  console.error('Failed to start avatar session:', error);
+                  avatarInstance.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+                    console.log('Avatar has stopped talking');
+                  });
+
+                } catch (error) {
+                  if (error.code === 10007 && retryCount < 3) {
+                    console.warn('Concurrent limit reached, retrying...');
+                    setTimeout(() => fetchSessionToken(retryCount + 1), 5000); // Retry after 5 seconds
+                  } else {
+                    console.error('Failed to start avatar session:', error);
+                    if (typeof window !== 'undefined') {
+                      localStorage.removeItem('sessionId'); // Clear sessionId on error
+                    }
+                  }
                 }
-              }
-            };
+              };
 
-            startAvatarSession();
+              startAvatarSession();
+            } else {
+              console.error('StreamingAvatar is not a constructor');
+            }
           } else {
-            console.error('StreamingAvatar is not a constructor');
+            console.error('Failed to obtain session token');
           }
-        } else {
-          console.error('Failed to obtain session token');
         }
       } catch (error) {
         console.error('Error fetching session token:', error);
@@ -162,7 +166,7 @@ function Triage() {
         avatar.stopAvatar();
       }
     };
-  }, [router.query]);
+  }, [router.query]); // Ensure dependencies are correct
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
