@@ -10,8 +10,8 @@ import StreamingAvatar, {
 } from "@heygen/streaming-avatar";
 // Default settings for the medical avatar
 const DEFAULT_SETTINGS = {
-  avatarId: "Dexter_Doctor_Standing2_public", // Default medical professional avatar
-  voiceId: "en_us_001", // Clear, professional English voice
+  avatarId: "", // Default medical professional avatar
+  voiceId: "", // Clear, professional English voice
   background: "",
   knowledgeBaseId: "", // Default medical knowledge base
 };
@@ -59,10 +59,10 @@ function Triage() {
             try {
               const startRequest = {
                 quality: AvatarQuality.High,
-                avatarName: "medical_f_1",
-                knowledgeId: "medical_triage",
+                avatarName: DEFAULT_SETTINGS.avatarId,
+                knowledgeId: DEFAULT_SETTINGS.knowledgeBaseId,
                 voice: {
-                  voiceId: "en_us_001",
+                  voiceId: DEFAULT_SETTINGS.voiceId,
                   rate: 1.0,
                   emotion: VoiceEmotion.FRIENDLY,
                 },
