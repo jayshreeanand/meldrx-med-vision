@@ -17,14 +17,11 @@ const fontMono = FontMono({
   variable: "--font-geist-mono",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "HeyGen Interactive Avatar SDK Demo",
-    template: `%s - HeyGen Interactive Avatar SDK Demo`,
-  },
-  icons: {
-    icon: "/heygen-logo.png",
-  },
+const inter = FontSans({ subsets: ['latin'] });
+
+export const metadata = {
+  title: 'Med Vision - AI-Powered Healthcare',
+  description: 'Connect with our medical professionals through a secure video consultation',
 };
 
 export const viewport: Viewport = {
