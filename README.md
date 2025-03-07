@@ -1,4 +1,4 @@
-# Med Vision AI - Virtual Medical Consultation Platform
+# Med Vision AI 
 
 ## Overview
 
@@ -12,6 +12,13 @@ Med Vision AI is an advanced medical consultation platform that provides AI-powe
 - 🏥 Smart triage system for appropriate care level recommendations
 - 💬 Real-time speech recognition and transcription
 - 🔒 Privacy-focused design
+
+Demo URL: https://meldrx-med-vision.vercel.app/triage
+
+Github:
+
+- Video consultation app: https://github.com/jayshreeanand/meldrx-med-vision
+- meldrx integeration code : https://github.com/jayshreeanand/meldrx-vision-assist 
 
 ## Flow Chart
 
