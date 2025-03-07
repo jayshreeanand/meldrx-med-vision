@@ -22,14 +22,7 @@ export default function TriagePage() {
 
       <div className="w-[900px] flex flex-col items-start justify-start gap-5 mx-auto pt-4 pb-20 flex-grow">
         <div className="w-full">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              Welcome to Med Vision Triage
-            </h2>
-            <p className="mt-4 text-xl text-gray-600">
-              Your AI-powered healthcare assistant will help assess your symptoms
-            </p>
-          </div>
+          
           
           <div className="bg-white shadow-xl rounded-lg overflow-hidden max-w-4xl mx-auto p-8">
             <div className="flex flex-col items-center">
