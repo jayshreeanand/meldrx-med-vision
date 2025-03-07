@@ -40,10 +40,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              Video Consultation
+              AI Medical Triage Assistant
             </h2>
             <p className="mt-4 text-xl text-gray-600">
-              Connect with our medical professionals through a secure video consultation
+            MedVision AI is a smart triage assistant that streamlines patient consultations through AI-driven video assessments, generating instant clinical reports for seamless doctor integration. 
             </p>
           </div>
 
