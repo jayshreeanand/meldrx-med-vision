@@ -20,17 +20,18 @@ import {
 } from "@nextui-org/react";
 import { useEffect, useRef, useState } from "react";
 import { useMemoizedFn, usePrevious } from "ahooks";
+import { useCallback } from "react";
 
 import InteractiveAvatarTextInput from "./InteractiveAvatarTextInput";
 
-import {AVATARS, STT_LANGUAGE_LIST} from "@/app/lib/constants";
+import {AVATARS, STT_LANGUAGE_LIST, KNOWLEDGE_BASE} from "@/app/lib/constants";
 
 export default function InteractiveAvatar() {
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [isLoadingRepeat, setIsLoadingRepeat] = useState(false);
   const [stream, setStream] = useState<MediaStream>();
   const [debug, setDebug] = useState<string>();
-  const [knowledgeBase, setKnowledgeBase] = useState<string>("public/knowledge_base.txt");
+  const [knowledgeBase, setKnowledgeBase] = useState<string>(KNOWLEDGE_BASE);
   const [avatarId, setAvatarId] = useState<string>("");
   const [language, setLanguage] = useState<string>('en');
 

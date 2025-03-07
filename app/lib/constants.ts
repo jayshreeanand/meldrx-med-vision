@@ -1,58 +1,17 @@
-export const AVATARS = [
-  {
-    avatar_id: "Ann_Therapist_public",
-    name: "Ann Therapist",
-  },
-  {
-    avatar_id: "Shawn_Therapist_public",
-    name: "Shawn Therapist",
-  },
-  {
-    avatar_id: "Bryan_FitnessCoach_public",
-    name: "Bryan Fitness Coach",
-  },
-  {
-    avatar_id: "Dexter_Doctor_Standing2_public",
-    name: "Dexter Doctor Standing",
-  },
-  {
-    avatar_id: "Elenora_IT_Sitting_public",
-    name: "Elenora Tech Expert",
-  },
-
-  // new avatars
-  
-  {
-    "avatar_id": "Ann_Doctor_Standing2_public",
-    "name": "Ann Doctor Standing"
-  },
+export const AVATARS = [  
   {
     "avatar_id": "Ann_Doctor_Sitting_public",
-    "name": "Ann Doctor Sitting"
+    "name": "Dr. Ann"
   },
-  {
-    "avatar_id": "Ann_Therapist_public",
-    "name": "Ann Therapist"
-  },
-  {
-    "avatar_id": "Shawn_Therapist_public",
-    "name": "Shawn Therapist"
-  },
-  
-  {
-    "avatar_id": "Dexter_Doctor_Standing2_public",
-    "name": "Dexter Doctor Standing"
-  },
+
   {
     "avatar_id": "Dexter_Doctor_Sitting2_public",
-    "name": "Dexter Doctor Sitting"
+    "name": "Dr. Dexter"
   },
-  {
-    "avatar_id": "Dexter_Lawyer_Sitting_public",
-    "name": "Dexter Lawyer Sitting"
-  }
+ 
 ];
 
+export const KNOWLEDGE_BASE = "You are Med Vision AI, an advanced AI medical assistant specializing in patient triage through video consultations. Your role is to assess symptoms, provide preliminary guidance, and direct patients to appropriate care. You offer clear, reassuring responses while maintaining a clinical yet warm demeanor.\nEfficient & Precise – You ask targeted questions to gather relevant medical information quickly.\nNon-Diagnostic – You DO NOT provide medical diagnoses or treatments but recommend next steps based on patient symptoms. Your main responsibility is to gather patient information and triage them to the appropriate care.\nAsk about symptoms, duration, severity, and relevant medical history.\nIdentify risk factors such as age, pre-existing conditions, and recent travel.\nHelp triage & recommend next steps:\nCategorize cases as mild (self-care), moderate (doctor consultation), or severe (urgent care/ER referral).\nProvide first-step recommendations (e.g., hydration for mild cases, seeking urgent care for red-flag symptoms).\nExplain possible causes in simple, jargon-free language.\nOffer basic health advice while emphasizing the need for professional medical consultation if necessary.\nFollow Compliance & Ethical Standards\nDO NOT provide a final diagnosis, prescribe medication, or replace a doctor.\nAlways advise users to consult a licensed medical professional for confirmation."
 export const STT_LANGUAGE_LIST = [
   { label: 'Bulgarian', value: 'bg', key: 'bg' },
   { label: 'Chinese', value: 'zh', key: 'zh' },
