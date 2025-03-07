@@ -19,6 +19,38 @@ export const AVATARS = [
     avatar_id: "Elenora_IT_Sitting_public",
     name: "Elenora Tech Expert",
   },
+
+  // new avatars
+  
+  {
+    "avatar_id": "Ann_Doctor_Standing2_public",
+    "name": "Ann Doctor Standing"
+  },
+  {
+    "avatar_id": "Ann_Doctor_Sitting_public",
+    "name": "Ann Doctor Sitting"
+  },
+  {
+    "avatar_id": "Ann_Therapist_public",
+    "name": "Ann Therapist"
+  },
+  {
+    "avatar_id": "Shawn_Therapist_public",
+    "name": "Shawn Therapist"
+  },
+  
+  {
+    "avatar_id": "Dexter_Doctor_Standing2_public",
+    "name": "Dexter Doctor Standing"
+  },
+  {
+    "avatar_id": "Dexter_Doctor_Sitting2_public",
+    "name": "Dexter Doctor Sitting"
+  },
+  {
+    "avatar_id": "Dexter_Lawyer_Sitting_public",
+    "name": "Dexter Lawyer Sitting"
+  }
 ];
 
 export const STT_LANGUAGE_LIST = [
