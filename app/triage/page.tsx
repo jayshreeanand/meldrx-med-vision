@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function TriagePage() {
   return (
-    <div className="w-screen h-screen flex flex-col">
+    <div className="w-screen h-screen flex flex-col bg-white">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
@@ -22,9 +22,16 @@ export default function TriagePage() {
 
       <div className="w-[900px] flex flex-col items-start justify-start gap-5 mx-auto pt-4 pb-20 flex-grow">
         <div className="w-full">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+              Medical Symptom Assessment
+            </h2>
+            <p className="mt-4 text-xl text-gray-600">
+              Our AI will analyze your symptoms, provide personalized guidance and connect you with the appropriate care.
+            </p>
+          </div>
           
-          
-          <div className="bg-white shadow-xl rounded-lg overflow-hidden max-w-4xl mx-auto p-8">
+          <div className="bg-white shadow-md rounded-lg overflow-hidden max-w-4xl mx-auto p-8 border border-gray-100">
             <div className="flex flex-col items-center">
               <InteractiveAvatar />
               <div className="mt-8 text-center">
@@ -33,7 +40,7 @@ export default function TriagePage() {
                   Our AI assistant will help assess your symptoms and provide guidance on next steps.
                 </p>
                 <div className="mt-4 space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                     <p className="text-gray-700">Please describe your symptoms in detail, and our AI will analyze them.</p>
                   </div>
                   {/* This would be where your interactive symptom assessment UI would go */}
