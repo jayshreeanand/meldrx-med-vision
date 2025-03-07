@@ -8,6 +8,10 @@ export const AVATARS = [
     "avatar_id": "Dexter_Doctor_Sitting2_public",
     "name": "Dr. Dexter"
   },
+  {
+    "avatar_id": "Judy_Doctor_Sitting2_public",
+    "name": "Dr. Judy"
+  },
  
 ];
 
